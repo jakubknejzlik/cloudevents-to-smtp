@@ -8,6 +8,8 @@ FROM jakubknejzlik/wait-for as wait-for
 
 FROM alpine:3.5
 
+RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
+
 WORKDIR /app
 
 COPY --from=builder /tmp/app /usr/local/bin/app
