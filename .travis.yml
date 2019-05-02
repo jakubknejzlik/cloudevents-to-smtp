@@ -1,0 +1,11 @@
+language: generic
+
+services:
+  - docker
+
+env:
+  - DOCKER_COMPOSE_VERSION=1.23.2
+
+script:
+  - make build tag push
+  # - make test && make build tag push
