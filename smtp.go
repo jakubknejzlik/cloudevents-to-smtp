@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	gomail "gopkg.in/gomail.v2"
+	gomail "gopkg.in/mail.v2"
 )
 
 // SMTPTransport ...
