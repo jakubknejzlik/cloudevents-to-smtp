@@ -3,13 +3,22 @@ package main
 import (
 	"bytes"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"strings"
 
 	cloudevents "github.com/cloudevents/sdk-go"
+	"github.com/ghodss/yaml"
 )
 
+type MessageTemplateSource struct {
+	To      string `json:"to" yaml:"to"`
+	Subject string `json:"subject" yaml:"subject"`
+	HTML    string `json:"html" yaml:"html"`
+	Text    string `json:"text" yaml:"text"`
+}
 type MessageTemplate struct {
 	To      *template.Template
 	Subject *template.Template
@@ -30,6 +39,37 @@ func NewMessageComposer() (t *MessageComposer, err error) {
 		Subject: template.Must(template.New("SUBJECT_TEMPLATE").Parse(os.Getenv("SUBJECT_TEMPLATE"))),
 		HTML:    template.Must(template.New("HTML_TEMPLATE").Parse(os.Getenv("HTML_TEMPLATE"))),
 		Text:    template.Must(template.New("TEXT_TEMPLATE").Parse(os.Getenv("TEXT_TEMPLATE"))),
+	}
+
+	tPath := os.Getenv("TEMPLATES_PATH")
+	if tPath != "" {
+		files, err := ioutil.ReadDir(tPath)
+		if err != nil {
+			return t, err
+		}
+		for _, f := range files {
+			if !f.IsDir() {
+				filename := f.Name()
+				dat, err := ioutil.ReadFile(path.Join(tPath, f.Name()))
+				if err != nil {
+					return t, err
+				}
+
+				var source MessageTemplateSource
+				err = yaml.Unmarshal(dat, &source)
+				if err != nil {
+					return t, err
+				}
+
+				templates[strings.TrimSuffix(filename, path.Ext(filename))] = MessageTemplate{
+					To:      template.Must(template.New("TO_TEMPLATE").Parse(source.To)),
+					Subject: template.Must(template.New("SUBJECT_TEMPLATE").Parse(source.Subject)),
+					HTML:    template.Must(template.New("HTML_TEMPLATE").Parse(source.HTML)),
+					Text:    template.Must(template.New("TEXT_TEMPLATE").Parse(source.Text)),
+				}
+			}
+			// return t, err
+		}
 	}
 
 	t = &MessageComposer{

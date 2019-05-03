@@ -11,6 +11,7 @@ FROM alpine:3.5
 RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
 
 WORKDIR /app
+ENV TEMPLATES_PATH /app/templates
 
 COPY --from=builder /tmp/app /usr/local/bin/app
 

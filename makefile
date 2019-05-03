@@ -40,7 +40,7 @@ deploy-local:
 	mv app /usr/local/bin/${IMAGE_NAME}
 
 run:
-	SMTP_URL=smtp://username:password@smtp.mailgun.org SMTP_SENDER=no-reply@novacloud.cz EVENT_TYPE=com.graphql.id.user.invited TO_TEMPLATE="{{.user.email}}" SUBJECT_TEMPLATE="Welcome in CloudEvents world!" PORT=8010 go run *.go
+	TEMPLATES_PATH=./examples/templates/ SMTP_URL=smtp://username:password@smtp.mailgun.org SMTP_SENDER=no-reply@novacloud.cz EVENT_TYPE=com.graphql.id.user.invited TO_TEMPLATE="{{.user.email}}" SUBJECT_TEMPLATE="Welcome in CloudEvents world!" PORT=8010 go run *.go
 
 # test:
 # 	DATABASE_URL=sqlite3://test.db $(IMAGE_NAME) server -p 8005
