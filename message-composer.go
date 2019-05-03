@@ -96,7 +96,10 @@ func (t *MessageComposer) MessageFromEvent(event cloudevents.Event) (m *SMTPTran
 		return
 	}
 
-	data := event.Data
+	data := &map[string]interface{}{}
+	if err := event.DataAs(data); err != nil {
+		return m, err
+	}
 
 	to, err := ExecuteTemplate(template.To, data)
 	if err != nil {
