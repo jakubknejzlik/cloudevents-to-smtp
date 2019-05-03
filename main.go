@@ -43,7 +43,7 @@ func startReceiver(ctx context.Context) (err error) {
 		return fmt.Errorf("failed to create client, %v", err)
 	}
 
-	templateHandler, err := NewTemplateHandler()
+	templateHandler, err := NewMessageComposer()
 	if err != nil {
 		return fmt.Errorf("failed to create template handler, %v", err)
 	}
@@ -55,24 +55,29 @@ func startReceiver(ctx context.Context) (err error) {
 	return nil
 }
 
-func gotEvent(templateHandler *TemplateHandler, smtpTRansport *SMTPTransport) func(ctx context.Context, event cloudevents.Event) error {
+func gotEvent(templateHandler *MessageComposer, smtpTRansport *SMTPTransport) func(ctx context.Context, event cloudevents.Event) error {
 	return func(ctx context.Context, event cloudevents.Event) error {
 		fmt.Printf("Got Event Context: %+v\n", event.Context)
-		data := &map[string]interface{}{}
-		if err := event.DataAs(data); err != nil {
-			fmt.Printf("Got Data Error: %s\n", err.Error())
-		}
-		fmt.Printf("Got Data: %+v\n", data)
+		// data := &map[string]interface{}{}
+		// if err := event.DataAs(data); err != nil {
+		// 	fmt.Printf("Got Data Error: %s\n", err.Error())
+		// }
+		// fmt.Printf("Got Data: %+v\n", data)
 
-		message, err := templateHandler.MessageFromData(data)
+		message, err := templateHandler.MessageFromEvent(event)
 		if err != nil {
 			return err
 		}
-		if err := smtpTRansport.SendMessage(message); err != nil {
+		if message == nil {
+			return nil
+		}
+
+		log.Println("Sending message type", event.Type(), ", to", message.To)
+		if err := smtpTRansport.SendMessage(*message); err != nil {
 			return err
 		}
 
-		fmt.Printf("Got Transport Context: %+v\n", cloudevents.HTTPTransportContextFrom(ctx))
+		// fmt.Printf("Got Transport Context: %+v\n", cloudevents.HTTPTransportContextFrom(ctx))
 
 		fmt.Printf("----------------------------\n")
 		return nil
