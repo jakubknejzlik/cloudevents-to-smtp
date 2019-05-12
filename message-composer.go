@@ -34,11 +34,17 @@ func NewMessageComposer() (t *MessageComposer, err error) {
 
 	templates := map[string]MessageTemplate{}
 
+	funcMap := template.FuncMap{
+		"env": func(key string) string {
+			return os.Getenv(key)
+		},
+	}
+
 	templates[eventType] = MessageTemplate{
-		To:      template.Must(template.New("TO_TEMPLATE").Parse(os.Getenv("TO_TEMPLATE"))),
-		Subject: template.Must(template.New("SUBJECT_TEMPLATE").Parse(os.Getenv("SUBJECT_TEMPLATE"))),
-		HTML:    template.Must(template.New("HTML_TEMPLATE").Parse(os.Getenv("HTML_TEMPLATE"))),
-		Text:    template.Must(template.New("TEXT_TEMPLATE").Parse(os.Getenv("TEXT_TEMPLATE"))),
+		To:      template.Must(template.New("TO_TEMPLATE").Funcs(funcMap).Parse(os.Getenv("TO_TEMPLATE"))),
+		Subject: template.Must(template.New("SUBJECT_TEMPLATE").Funcs(funcMap).Parse(os.Getenv("SUBJECT_TEMPLATE"))),
+		HTML:    template.Must(template.New("HTML_TEMPLATE").Funcs(funcMap).Parse(os.Getenv("HTML_TEMPLATE"))),
+		Text:    template.Must(template.New("TEXT_TEMPLATE").Funcs(funcMap).Parse(os.Getenv("TEXT_TEMPLATE"))),
 	}
 
 	tPath := os.Getenv("TEMPLATES_PATH")
@@ -62,10 +68,10 @@ func NewMessageComposer() (t *MessageComposer, err error) {
 				}
 
 				templates[strings.TrimSuffix(filename, path.Ext(filename))] = MessageTemplate{
-					To:      template.Must(template.New("TO_TEMPLATE").Parse(source.To)),
-					Subject: template.Must(template.New("SUBJECT_TEMPLATE").Parse(source.Subject)),
-					HTML:    template.Must(template.New("HTML_TEMPLATE").Parse(source.HTML)),
-					Text:    template.Must(template.New("TEXT_TEMPLATE").Parse(source.Text)),
+					To:      template.Must(template.New("TO_TEMPLATE").Funcs(funcMap).Parse(source.To)),
+					Subject: template.Must(template.New("SUBJECT_TEMPLATE").Funcs(funcMap).Parse(source.Subject)),
+					HTML:    template.Must(template.New("HTML_TEMPLATE").Funcs(funcMap).Parse(source.HTML)),
+					Text:    template.Must(template.New("TEXT_TEMPLATE").Funcs(funcMap).Parse(source.Text)),
 				}
 			}
 			// return t, err
