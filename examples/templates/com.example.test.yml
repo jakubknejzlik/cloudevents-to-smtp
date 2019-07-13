@@ -1,4 +1,5 @@
 to: john.doe@example.com,{{.user.email}}
-Subject: Hello world
-Text: Welcome to the world of tomorrow
-HTML: Welcome to the world of tomorrow
+subject: Hello world
+text: Welcome to the world of tomorrow
+html:
+  file: test.html

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -13,11 +14,39 @@ import (
 	"github.com/ghodss/yaml"
 )
 
+type MessageTemplateSourceValue interface{}
+
+func getTemplateFromSourceValue(v MessageTemplateSourceValue) *template.Template {
+	tPath := os.Getenv("TEMPLATES_PATH")
+
+	funcMap := template.FuncMap{
+		"env": func(key string) string {
+			return os.Getenv(key)
+		},
+	}
+
+	switch i := v.(type) {
+	case string:
+		return template.Must(template.New("template").Funcs(funcMap).Parse(v.(string)))
+	case map[string]interface{}:
+		if i["file"] != "" {
+			name := i["file"].(string)
+			b, err := ioutil.ReadFile(path.Join(tPath, name))
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println("??", string(b))
+			return template.Must(template.New(name).Funcs(funcMap).Parse(string(b)))
+		}
+	}
+	return nil
+}
+
 type MessageTemplateSource struct {
-	To      string `json:"to" yaml:"to"`
-	Subject string `json:"subject" yaml:"subject"`
-	HTML    string `json:"html" yaml:"html"`
-	Text    string `json:"text" yaml:"text"`
+	To      MessageTemplateSourceValue `json:"to" yaml:"to"`
+	Subject MessageTemplateSourceValue `json:"subject" yaml:"subject"`
+	HTML    MessageTemplateSourceValue `json:"html" yaml:"html"`
+	Text    MessageTemplateSourceValue `json:"text" yaml:"text"`
 }
 type MessageTemplate struct {
 	To      *template.Template
@@ -56,7 +85,10 @@ func NewMessageComposer() (t *MessageComposer, err error) {
 		for _, f := range files {
 			if !f.IsDir() {
 				filename := f.Name()
-				dat, err := ioutil.ReadFile(path.Join(tPath, f.Name()))
+				if path.Ext(filename) != ".yaml" && path.Ext(filename) != ".yml" {
+					continue
+				}
+				dat, err := ioutil.ReadFile(path.Join(tPath, filename))
 				if err != nil {
 					return t, err
 				}
@@ -64,14 +96,14 @@ func NewMessageComposer() (t *MessageComposer, err error) {
 				var source MessageTemplateSource
 				err = yaml.Unmarshal(dat, &source)
 				if err != nil {
-					return t, err
+					return t, fmt.Errorf("Could not parse file %s, err: %s", filename, err.Error())
 				}
 
 				templates[strings.TrimSuffix(filename, path.Ext(filename))] = MessageTemplate{
-					To:      template.Must(template.New("TO_TEMPLATE").Funcs(funcMap).Parse(source.To)),
-					Subject: template.Must(template.New("SUBJECT_TEMPLATE").Funcs(funcMap).Parse(source.Subject)),
-					HTML:    template.Must(template.New("HTML_TEMPLATE").Funcs(funcMap).Parse(source.HTML)),
-					Text:    template.Must(template.New("TEXT_TEMPLATE").Funcs(funcMap).Parse(source.Text)),
+					To:      getTemplateFromSourceValue(source.To),
+					Subject: getTemplateFromSourceValue(source.Subject),
+					HTML:    getTemplateFromSourceValue(source.HTML),
+					Text:    getTemplateFromSourceValue(source.Text),
 				}
 			}
 			// return t, err
